@@ -15,6 +15,7 @@ __pycache__/
 # Local data and caches (reproducible; never committed)
 data/raw/
 data/cache/
+data/corpus/
 eval/cache/
 *.parquet
 

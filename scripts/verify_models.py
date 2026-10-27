@@ -1,8 +1,8 @@
 """M0: check the owner's model list and whether gpt-6-luna supports tool calling.
 
 Reads OPENAI_API_KEY from the environment (a local .env is loaded if present).
-Never prints the key. Listing models is free; the chat calls cost ~$0.001 total.
-Usage: python scripts/verify_models.py [--yes]
+Listing models is free; the chat calls cost ~$0.001 total.
+Usage: python scripts/verify_models.py 
 """
 import json
 import os
