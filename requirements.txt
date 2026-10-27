@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+psycopg[binary]
+psycopg_pool
+openai
+pydantic-settings
+pypdf
+python-multipart
+numpy
