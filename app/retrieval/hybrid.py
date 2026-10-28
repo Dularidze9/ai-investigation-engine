@@ -30,12 +30,18 @@ def _parse_vec(text: str) -> list[float]:
     return [float(x) for x in text.strip("[]").split(",")]
 
 
-def search(conn, query: str, query_vec=None, k: int = 10, mode: str = "hybrid",
-           use_mmr: bool = False) -> list[Hit]:
+def retrieve_lists(conn, query: str, query_vec=None, mode: str = "hybrid"):
+    """Run the database searches once. Returns (dense [(chunk_id, sim)], keyword [(chunk_id, bm25)])."""
     if mode not in ("dense", "bm25", "hybrid"):
         raise ValueError(f"unknown mode {mode}")
     dense = dense_search(conn, query_vec, DENSE_N) if mode in ("dense", "hybrid") else []
     keyword = bm25_search(conn, query, BM25_N) if mode in ("bm25", "hybrid") else []
+    return dense, keyword
+
+
+def finalize(conn, dense, keyword, k: int = 10, mode: str = "hybrid", use_mmr: bool = False) -> list[Hit]:
+    """Fuse the two lists (or take one), optionally apply MMR, and load chunk text and titles.
+    Split from retrieve_lists so the evaluation can reuse one database search for several configurations."""
     dense_rank = {cid: i for i, (cid, _) in enumerate(dense, start=1)}
     dense_sim = dict(dense)
     bm25_rank = {cid: i for i, (cid, _) in enumerate(keyword, start=1)}
@@ -64,3 +70,9 @@ def search(conn, query: str, query_vec=None, k: int = 10, mode: str = "hybrid",
         "WHERE c.id = ANY(%s)", (ids,))}
     return [Hit(c, rows[c][1], rows[c][2], rows[c][3], s, dense_rank.get(c), bm25_rank.get(c), dense_sim.get(c))
             for c, s in ranked if c in rows]
+
+
+def search(conn, query: str, query_vec=None, k: int = 10, mode: str = "hybrid",
+           use_mmr: bool = False) -> list[Hit]:
+    dense, keyword = retrieve_lists(conn, query, query_vec, mode)
+    return finalize(conn, dense, keyword, k, mode, use_mmr)
