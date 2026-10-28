@@ -3,7 +3,8 @@
 prepare()  pure: size limit, parse, chunk (strategy A), chunk cap, statistics delta. No DB, no API.
 ingest()   duplicate checks (exact hash, then near-duplicate by embedding + Jaccard), DB size guard,
            embed, then ONE transaction: insert document + chunks and add the statistics delta.
-           With replace_document_id the old version is deleted in the same transaction (= update).
+           With replace_document_id the old chunks are replaced in the same transaction and the
+           document row is updated in place, so the id stays the same (= update).
 delete_document()  subtracts the statistics delta and deletes the document (chunks cascade).
 
 term_stats.df counts chunks containing a term, exactly as load_db.py built it, so documents
@@ -100,11 +101,12 @@ def _add_stats(conn, df: Counter, n_chunks: int, total_len: int, sign: int) -> N
                  (sign * n_chunks, sign * total_len))
 
 
-def _delete_in_tx(conn, document_id: int) -> int:
+def _remove_chunks_in_tx(conn, document_id: int) -> int:
+    """Subtract the document's chunks from the statistics and delete them (the document row stays)."""
     texts = [r[0] for r in conn.execute("SELECT text FROM chunks WHERE document_id = %s", (document_id,))]
     tokens = [tokenize(t) for t in texts]
     _add_stats(conn, Counter(t for toks in tokens for t in set(toks)), len(texts), sum(map(len, tokens)), -1)
-    conn.execute("DELETE FROM documents WHERE id = %s", (document_id,))
+    conn.execute("DELETE FROM chunks WHERE document_id = %s", (document_id,))
     return len(texts)
 
 
@@ -113,7 +115,9 @@ def delete_document(conn, document_id: int) -> int:
     with conn.transaction():
         if not conn.execute("SELECT 1 FROM documents WHERE id = %s", (document_id,)).fetchone():
             raise IngestError(f"document {document_id} not found")
-        return _delete_in_tx(conn, document_id)
+        n = _remove_chunks_in_tx(conn, document_id)
+        conn.execute("DELETE FROM documents WHERE id = %s", (document_id,))
+        return n
 
 
 def ingest(conn, filename: str, data: bytes, embedder, source: str = "upload",
@@ -141,12 +145,18 @@ def ingest(conn, filename: str, data: bytes, embedder, source: str = "upload",
         return IngestResult("duplicate", None, title, duplicate_of=dup, embed_tokens=used)
 
     with conn.transaction():
-        if replace_document_id is not None:
-            _delete_in_tx(conn, replace_document_id)
-        doc_id = conn.execute(
-            "INSERT INTO documents (source, title, doc_type, content_hash, metadata) "
-            "VALUES (%s, %s, %s, %s, %s::jsonb) RETURNING id",
-            (source, title, p.doc.doc_type, p.content_hash, _json(p.doc.metadata))).fetchone()[0]
+        if replace_document_id is not None:  # update in place: the document keeps its id
+            _remove_chunks_in_tx(conn, replace_document_id)
+            doc_id = replace_document_id
+            conn.execute(
+                "UPDATE documents SET source = %s, title = %s, doc_type = %s, content_hash = %s, "
+                "metadata = %s::jsonb, updated_at = now() WHERE id = %s",
+                (source, title, p.doc.doc_type, p.content_hash, _json(p.doc.metadata), doc_id))
+        else:
+            doc_id = conn.execute(
+                "INSERT INTO documents (source, title, doc_type, content_hash, metadata) "
+                "VALUES (%s, %s, %s, %s, %s::jsonb) RETURNING id",
+                (source, title, p.doc.doc_type, p.content_hash, _json(p.doc.metadata))).fetchone()[0]
         conn.cursor().executemany(
             "INSERT INTO chunks (document_id, chunk_index, text, n_terms, embedding, tsv) "
             "VALUES (%s, %s, %s, %s, %s::halfvec, to_tsvector('english', %s))",

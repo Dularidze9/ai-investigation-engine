@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Investigation Engine</title>
+<style>
+  :root { --fg:#1d2330; --muted:#5d6676; --bg:#f6f7f9; --card:#fff; --line:#dde1e7; --accent:#2457c5;
+          --ok:#1d7a3e; --warn:#a86400; --bad:#b3261e; --conf:#7a3fb0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--fg); background:var(--bg); }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:12px 16px; }
+  header h1 { font-size:18px; margin:0; }
+  header p { margin:2px 0 0; color:var(--muted); font-size:13px; }
+  nav { display:flex; gap:4px; margin-top:10px; }
+  nav button { border:1px solid var(--line); background:var(--bg); padding:6px 14px; border-radius:6px; cursor:pointer; font:inherit; }
+  nav button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:14px; }
+  textarea, input[type=text], input[type=password], input[type=number] { width:100%; font:inherit; padding:8px; border:1px solid var(--line); border-radius:6px; }
+  textarea { min-height:70px; resize:vertical; }
+  button.primary { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:8px 16px; font:inherit; cursor:pointer; }
+  button.danger { background:var(--bad); color:#fff; border:0; border-radius:6px; padding:8px 16px; font:inherit; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .examples button { border:1px solid var(--line); background:var(--bg); border-radius:14px; padding:3px 10px; font-size:13px; cursor:pointer; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; color:#fff; font-size:13px; font-weight:600; }
+  .answered { background:var(--ok); } .partial { background:var(--warn); } .conflicting { background:var(--conf); }
+  .insufficient_evidence { background:var(--muted); } .error { background:var(--bad); }
+  .answer { font-size:17px; margin:10px 0; white-space:pre-wrap; }
+  .cite { color:var(--accent); cursor:pointer; font-size:12px; vertical-align:super; text-decoration:none; }
+  .source { border-left:3px solid var(--line); padding:6px 10px; margin:8px 0; }
+  .source.hl { border-left-color:var(--accent); background:#eef3fd; }
+  .source pre, .chunk pre { white-space:pre-wrap; font:13px/1.45 ui-monospace, Consolas, monospace; margin:4px 0 0; max-height:220px; overflow:auto; }
+  .conflict { border-left:3px solid var(--conf); padding:4px 10px; margin:6px 0; }
+  a.doc { color:var(--accent); cursor:pointer; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .banner { padding:10px 16px; background:#fff4d6; border-bottom:1px solid #ecd28a; font-size:14px; }
+  .banner.err { background:#fde2e0; border-color:#e8a29c; }
+  .hidden { display:none; }
+  .msg { white-space:pre-wrap; font-size:14px; }
+  details summary { cursor:pointer; color:var(--muted); font-size:13px; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="banner" class="banner"><span class="spinner"></span> Waking up the server and database (free tier: the first request can take up to a minute)…</div>
+<header>
+  <h1>AI Investigation Engine</h1>
+  <p>Ask questions over 66k Wikipedia paragraphs (HotpotQA) and Acme Payments incident documents. Answers cite their sources; the engine says when sources disagree or evidence is missing.</p>
+  <nav>
+    <button data-tab="ask" class="active">Ask</button>
+    <button data-tab="docs">Documents</button>
+    <button data-tab="admin">Manage (admin)</button>
+  </nav>
+</header>
+
+<main>
+<!-- ASK -->
+<section id="tab-ask">
+  <div class="card">
+    <textarea id="question" maxlength="500" placeholder="e.g. How long did the March 10, 2026 payment incident last?"></textarea>
+    <div class="row examples" id="examples"><span class="muted">Try:</span></div>
+    <div class="row">
+      <button class="primary" id="askBtn">Ask</button>
+      <span class="muted" id="limits"></span>
+    </div>
+  </div>
+  <div id="result"></div>
+</section>
+
+<!-- DOCUMENTS -->
+<section id="tab-docs" class="hidden">
+  <div class="card">
+    <div class="row" style="margin-top:0">
+      <input type="text" id="docQuery" placeholder="Search titles…" style="flex:1">
+      <label class="muted"><input type="checkbox" id="uploadedOnly"> uploaded / synthetic only</label>
+      <button class="primary" id="docSearch">Search</button>
+    </div>
+    <div id="docList" style="margin-top:10px"></div>
+  </div>
+  <div id="docView"></div>
+</section>
+
+<!-- ADMIN -->
+<section id="tab-admin" class="hidden">
+  <div class="card">
+    <p class="muted" style="margin-top:0">Adding, updating and deleting documents needs the admin token. It is kept only in this browser tab (sessionStorage).
+      Files: .txt .md .html .pdf .json, at most 2 MB and 200 chunks. Exact and near duplicates are rejected.</p>
+    <input type="password" id="token" placeholder="Admin token">
+  </div>
+  <div class="card">
+    <b>Add a document</b>
+    <div class="row"><input type="file" id="addFile" accept=".txt,.md,.markdown,.html,.htm,.pdf,.json"><button class="primary" id="addBtn">Upload</button></div>
+  </div>
+  <div class="card">
+    <b>Update a document</b> <span class="muted">(replace its content with a new file)</span>
+    <div class="row"><input type="number" id="updId" placeholder="Document id" style="width:140px"><input type="file" id="updFile" accept=".txt,.md,.markdown,.html,.htm,.pdf,.json"><button class="primary" id="updBtn">Replace</button></div>
+  </div>
+  <div class="card">
+    <b>Delete a document</b>
+    <div class="row"><input type="number" id="delId" placeholder="Document id" style="width:140px"><button class="danger" id="delBtn">Delete</button></div>
+  </div>
+  <div class="card msg" id="adminMsg">No action yet.</div>
+</section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs = {}, ...children) {   // builds DOM with textContent only: document text is never parsed as HTML
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) if (c != null) e.append(c instanceof Node ? c : String(c));
+  return e;
+}
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  let body; try { body = await r.json(); } catch { body = {}; }
+  if (!r.ok) throw new Error(typeof body.detail === "string" ? body.detail : `HTTP ${r.status}: ${JSON.stringify(body.detail || body)}`);
+  return body;
+}
+
+// ---- tabs ----
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  for (const t of ["ask", "docs", "admin"]) $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab);
+  if (b.dataset.tab === "docs" && !$("docList").childElementCount) loadDocs(0);
+});
+
+// ---- waking up: Render free sleeps after 15 min, Neon suspends after 5 min ----
+async function wake() {
+  for (let i = 0; i < 12; i++) {
+    try {
+      const r = await fetch("/health");
+      if (r.ok) { $("banner").classList.add("hidden"); refreshLimits(); return; }
+    } catch {}
+    await new Promise(res => setTimeout(res, 5000));
+  }
+  $("banner").className = "banner err";
+  $("banner").textContent = "The database is not reachable right now. Please reload in a minute.";
+}
+async function refreshLimits() {
+  try {
+    const s = await api("/api/status");
+    $("limits").textContent = `${s.questions_left_this_hour}/${s.limit_per_hour} questions left this hour · demo budget used $${s.spent_usd.toFixed(3)} of $${s.cap_usd.toFixed(2)}`;
+  } catch {}
+}
+
+// ---- ask ----
+const EXAMPLES = [
+  "How long did the March 10, 2026 payment incident last?",
+  "Which team owns the service whose change triggered the March 10 payment incident?",
+  "Were Scott Derrickson and Ed Wood of the same nationality?",
+  "What was Acme Payments' revenue in 2025?",
+];
+for (const q of EXAMPLES) $("examples").append(el("button", { onclick: () => { $("question").value = q; } }, q));
+
+$("askBtn").onclick = ask;
+$("question").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask(); });
+
+async function ask() {
+  const question = $("question").value.trim();
+  if (question.length < 3) return;
+  $("askBtn").disabled = true;
+  $("result").replaceChildren(el("div", { class: "card" }, el("span", { class: "spinner" }),
+    " Investigating: searching, planning sub-questions, reading sources… (usually 5-20 s)"));
+  try {
+    const r = await api("/api/query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
+    renderAnswer(r);
+  } catch (e) {
+    $("result").replaceChildren(el("div", { class: "card" }, el("span", { class: "badge error" }, "error"), " ", e.message));
+  } finally {
+    $("askBtn").disabled = false;
+    refreshLimits();
+  }
+}
+
+const STATUS_TEXT = { answered: "answered", partial: "partially answered", conflicting: "sources disagree",
+                      insufficient_evidence: "not enough evidence", error: "error" };
+
+function renderAnswer(r) {
+  // citations are chunk ids; show them as [1], [2]… in the order of the source list
+  const num = new Map(r.sources.map((s, i) => [s.chunk_id, i + 1]));
+  const cites = (ids) => ids.filter(id => num.has(id)).map(id =>
+    el("a", { class: "cite", onclick: () => highlight(id) }, `[${num.get(id)}]`));
+
+  const card = el("div", { class: "card" },
+    el("span", { class: "badge " + r.status }, STATUS_TEXT[r.status] || r.status),
+    r.cached ? el("span", { class: "muted" }, "  (cached answer, no cost)") : null,
+    el("div", { class: "answer" }, r.answer));
+
+  if (r.claims.length) {
+    card.append(el("b", {}, "Supporting claims"),
+      el("ul", {}, r.claims.map(c => el("li", {}, c.text, " ", cites(c.citations)))));
+  }
+  if (r.conflicts.length) {
+    card.append(el("b", {}, "Contradictions found"),
+      ...r.conflicts.map(c => el("div", { class: "conflict" }, c.description, " ", cites(c.citations))));
+  }
+  if (r.missing.length) {
+    card.append(el("b", {}, "Missing information"), el("ul", {}, r.missing.map(m => el("li", {}, m))));
+  }
+
+  const sources = el("div", { class: "card" }, el("b", {}, `Sources (${r.sources.length})`),
+    r.sources.length ? null : el("p", { class: "muted" }, "No sources cited."),
+    r.sources.map((s, i) => el("div", { class: "source", id: "src-" + s.chunk_id },
+      `[${i + 1}] `, el("a", { class: "doc", onclick: () => openDoc(s.document_id, s.chunk_id) }, s.title),
+      el("span", { class: "muted" }, `  document ${s.document_id}, chunk ${s.chunk_id}`),
+      el("pre", {}, s.text))));
+
+  const details = el("details", { class: "card" }, el("summary", {}, "How the answer was produced"),
+    r.sub_queries.length ? el("p", {}, el("b", {}, "Sub-queries: "), r.sub_queries.join(" · ")) : null,
+    el("pre", { class: "muted", style: "white-space:pre-wrap" }, r.trace.join("\n")),
+    r.validation_issues.length ? el("p", {}, el("b", {}, "Citation validator: "), r.validation_issues.join("; ")) : null,
+    el("p", { class: "muted" }, `${r.llm_calls} LLM calls · ${r.evidence_count} evidence chunks · cost $${(r.cost_usd || 0).toFixed(5)}`));
+
+  $("result").replaceChildren(card, sources, details);
+}
+function highlight(chunkId) {
+  document.querySelectorAll(".source").forEach(s => s.classList.remove("hl"));
+  const s = $("src-" + chunkId);
+  if (s) { s.classList.add("hl"); s.scrollIntoView({ behavior: "smooth", block: "center" }); }
+}
+
+// ---- documents ----
+let docOffset = 0;
+$("docSearch").onclick = () => loadDocs(0);
+$("docQuery").addEventListener("keydown", e => { if (e.key === "Enter") loadDocs(0); });
+$("uploadedOnly").onchange = () => loadDocs(0);
+
+async function loadDocs(offset) {
+  docOffset = offset;
+  const p = new URLSearchParams({ q: $("docQuery").value, uploaded_only: $("uploadedOnly").checked, limit: 20, offset });
+  $("docList").replaceChildren(el("span", { class: "spinner" }));
+  try {
+    const r = await api("/api/documents?" + p);
+    const table = el("table", {}, el("tr", {}, ["id", "title", "source", "type", "chunks"].map(h => el("th", {}, h))),
+      r.documents.map(d => el("tr", {},
+        el("td", {}, d.id), el("td", {}, el("a", { class: "doc", onclick: () => openDoc(d.id) }, d.title)),
+        el("td", { class: "muted" }, d.source), el("td", {}, d.doc_type), el("td", {}, d.chunks))));
+    const pager = el("div", { class: "row" },
+      el("span", { class: "muted" }, `${r.total.toLocaleString()} documents · showing ${offset + 1}-${offset + r.documents.length}`),
+      offset > 0 ? el("button", { onclick: () => loadDocs(Math.max(0, offset - 20)) }, "← prev") : null,
+      offset + 20 < r.total ? el("button", { onclick: () => loadDocs(offset + 20) }, "next →") : null);
+    $("docList").replaceChildren(table, pager);
+  } catch (e) { $("docList").replaceChildren(el("p", {}, e.message)); }
+}
+
+async function openDoc(id, chunkId) {
+  document.querySelector('nav button[data-tab="docs"]').click();
+  $("docView").replaceChildren(el("div", { class: "card" }, el("span", { class: "spinner" })));
+  try {
+    const d = await api("/api/documents/" + id);
+    $("docView").replaceChildren(el("div", { class: "card" },
+      el("h3", { style: "margin-top:0" }, d.title),
+      el("p", { class: "muted" }, `document ${d.id} · ${d.doc_type} · source: ${d.source} · updated ${d.updated_at.slice(0, 16).replace("T", " ")}`),
+      d.chunks.map(c => el("div", { class: "source chunk" + (c.chunk_id === chunkId ? " hl" : ""), id: "chunk-" + c.chunk_id },
+        el("span", { class: "muted" }, `chunk ${c.index} (id ${c.chunk_id})`), el("pre", {}, c.text)))));
+    const target = chunkId && $("chunk-" + chunkId);
+    (target || $("docView")).scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) { $("docView").replaceChildren(el("div", { class: "card" }, e.message)); }
+}
+
+// ---- admin ----
+try { $("token").value = sessionStorage.getItem("adminToken") || ""; } catch {}
+$("token").onchange = () => { try { sessionStorage.setItem("adminToken", $("token").value); } catch {} };
+const auth = () => ({ "X-Admin-Token": $("token").value });
+
+async function adminCall(btn, fn) {
+  btn.disabled = true;
+  $("adminMsg").textContent = "Working… (uploads are parsed, chunked, embedded and indexed)";
+  try { $("adminMsg").textContent = JSON.stringify(await fn(), null, 2); }
+  catch (e) { $("adminMsg").textContent = "Error: " + e.message; }
+  finally { btn.disabled = false; }
+}
+function upload(method, path, file) {
+  const fd = new FormData(); fd.append("file", file);
+  return api(path, { method, headers: auth(), body: fd });
+}
+$("addBtn").onclick = () => {
+  const f = $("addFile").files[0];
+  if (!f) { $("adminMsg").textContent = "Choose a file first."; return; }
+  adminCall($("addBtn"), () => upload("POST", "/api/documents", f));
+};
+$("updBtn").onclick = () => {
+  const f = $("updFile").files[0], id = $("updId").value;
+  if (!f || !id) { $("adminMsg").textContent = "Enter a document id and choose a file."; return; }
+  adminCall($("updBtn"), () => upload("PUT", "/api/documents/" + id, f));
+};
+$("delBtn").onclick = () => {
+  const id = $("delId").value;
+  if (!id || !confirm(`Delete document ${id} and all its chunks?`)) return;
+  adminCall($("delBtn"), () => api("/api/documents/" + id, { method: "DELETE", headers: auth() }));
+};
+
+wake();
+</script>
+</body>
+</html>
