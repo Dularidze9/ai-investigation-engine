@@ -39,6 +39,17 @@ def retrieve_lists(conn, query: str, query_vec=None, mode: str = "hybrid"):
     return dense, keyword
 
 
+def fuse(dense, keyword, mode: str) -> list[tuple[int, float]]:
+    """Pick the ranking for a mode. Each mode uses ONLY its own list(s), even if both were fetched."""
+    if mode == "hybrid":
+        return rrf([[c for c, _ in dense], [c for c, _ in keyword]])
+    if mode == "dense":
+        return list(dense)
+    if mode == "bm25":
+        return list(keyword)
+    raise ValueError(f"unknown mode {mode}")
+
+
 def finalize(conn, dense, keyword, k: int = 10, mode: str = "hybrid", use_mmr: bool = False) -> list[Hit]:
     """Fuse the two lists (or take one), optionally apply MMR, and load chunk text and titles.
     Split from retrieve_lists so the evaluation can reuse one database search for several configurations."""
@@ -46,10 +57,7 @@ def finalize(conn, dense, keyword, k: int = 10, mode: str = "hybrid", use_mmr: b
     dense_sim = dict(dense)
     bm25_rank = {cid: i for i, (cid, _) in enumerate(keyword, start=1)}
 
-    if mode == "hybrid":
-        ranked = rrf([[c for c, _ in dense], [c for c, _ in keyword]])
-    else:
-        ranked = dense or keyword
+    ranked = fuse(dense, keyword, mode)
     if not ranked:
         return []
 
