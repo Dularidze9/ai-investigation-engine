@@ -24,6 +24,15 @@ def test_a_single_huge_sentence_is_hard_cut():
     assert [len(c.split("\n\n", 1)[1].split()) for c in chunks] == [40, 40, 20]
 
 
+def test_a_markdown_headings_attach_to_the_next_paragraph():
+    text = "# Outage\n\n## Root cause\n\nThe model was slow.\n\nRolled back."
+    assert chunk_a("Outage", text) == ["Outage\n\nRoot cause\nThe model was slow.", "Outage\n\nRolled back."]
+
+
+def test_a_hash_without_space_is_not_a_heading():
+    assert chunk_a("Song", "#9 Dream is a song.") == ["Song\n\n#9 Dream is a song."]
+
+
 def test_a_empty_text_gives_no_chunks():
     assert chunk_a("T", "  \n\n  ") == []
 

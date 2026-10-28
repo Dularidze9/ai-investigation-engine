@@ -28,10 +28,15 @@ def make_pdf(text: str) -> bytes:
     return bytes(out)
 
 
-def test_txt_uses_filename_as_title():
-    d = parse_file("incident.txt", b"Payments failed.\r\n\r\n\r\n\r\nRolled back.")
-    assert d.title == "incident" and d.doc_type == "txt"
+def test_txt_short_first_line_is_the_title():
+    d = parse_file("incident.txt", b"Incident 42\r\n\r\nPayments failed.\r\n\r\n\r\n\r\nRolled back.")
+    assert d.title == "Incident 42" and d.doc_type == "txt"
     assert d.text == "Payments failed.\n\nRolled back."
+
+
+def test_txt_single_line_keeps_filename_title():
+    d = parse_file("note.txt", b"Payments failed.")
+    assert d.title == "note" and d.text == "Payments failed."
 
 
 def test_md_title_from_heading():

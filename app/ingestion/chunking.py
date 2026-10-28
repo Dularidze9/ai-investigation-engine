@@ -36,14 +36,28 @@ def _split_long(paragraph: str, max_words: int) -> list[str]:
     return out
 
 
+_MD_HEADING = re.compile(r"^#{1,6}\s+(\S.*)$")
+
+
 def chunk_a(title: str, text: str, max_words: int = MAX_WORDS) -> list[str]:
-    chunks = []
+    """A Markdown heading line is not a chunk of its own: it is attached to the paragraph after it,
+    and a top heading that just repeats the title is dropped (the title is in every chunk anyway)."""
+    chunks, heading = [], None
     for para in re.split(r"\n\s*\n", text):
         para = para.strip()
         if not para:
             continue
+        m = _MD_HEADING.match(para) if "\n" not in para else None
+        if m:
+            h = m.group(1).strip()
+            heading = None if h.lower() == title.strip().lower() else h
+            continue
+        if heading:
+            para, heading = f"{heading}\n{para}", None
         pieces = [para] if len(para.split()) <= max_words else _split_long(para, max_words)
         chunks.extend(f"{title}\n\n{p}" for p in pieces)
+    if heading:  # a heading at the very end with nothing under it
+        chunks.append(f"{title}\n\n{heading}")
     return chunks
 
 

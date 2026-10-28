@@ -1,0 +1,5 @@
+{
+ "title": "fraud-check latency dashboard export",
+ "text": "fraud-check p99 latency on March 9, 2026: 240 milliseconds.\n\nfraud-check p99 latency on March 10, 2026 between 14:00 and 16:30 UTC: 1,900 milliseconds.\n\nfraud-check p99 latency on March 11, 2026: 230 milliseconds.",
+ "source_system": "metrics dashboard"
+}

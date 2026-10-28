@@ -56,16 +56,19 @@ class AgentResult:
 
 class Agent:
     def __init__(self, llm: LLMClient, retriever: Retriever, gate_min_sim: float = GATE_MIN_SIM,
-                 max_rounds: int = MAX_ROUNDS):
+                 max_rounds: int = MAX_ROUNDS, agentic: bool = True, first_k: int = FIRST_K):
+        """agentic=False is the single-shot RAG baseline for the evaluation:
+        one search (first_k chunks) and one answer call, no planning and no tools."""
         self.llm, self.retriever = llm, retriever
         self.gate_min_sim, self.max_rounds = gate_min_sim, max_rounds
+        self.agentic, self.first_k = agentic, first_k
 
     def run(self, question: str) -> AgentResult:
         r = AgentResult(question=question, status="error", answer="")
         store = EvidenceStore()
 
         # 1-2. first search and evidence gate
-        first = self.retriever.search(question, FIRST_K)
+        first = self.retriever.search(question, self.first_k)
         store.add(first)
         best = max((e.dense_sim or 0.0 for e in first), default=0.0)
         r.trace.append(f"search: {len(first)} chunks, best similarity {best:.3f}")
@@ -75,15 +78,15 @@ class Agent:
             r.missing = ["No document in the index is relevant enough to this question."]
             return r
 
-        # 3. plan and search each sub-query
-        r.sub_queries = self._plan(question, r)
-        for sq in r.sub_queries:
-            if sq.strip().lower() != question.strip().lower():
-                new = store.add(self.retriever.search(sq, SUB_K))
-                r.trace.append(f"sub-query '{sq}': {len(new)} new chunks")
-
-        # 4. tool loop
-        self._gather(question, store, r)
+        if self.agentic:
+            # 3. plan and search each sub-query
+            r.sub_queries = self._plan(question, r)
+            for sq in r.sub_queries:
+                if sq.strip().lower() != question.strip().lower():
+                    new = store.add(self.retriever.search(sq, SUB_K))
+                    r.trace.append(f"sub-query '{sq}': {len(new)} new chunks")
+            # 4. tool loop
+            self._gather(question, store, r)
 
         # 5-6. answer and validate
         evidence = self._select_evidence(store)

@@ -1,0 +1,9 @@
+Incident channel export, INC-2231, March 10, 2026
+
+14:22 Jonas Berg: gateway queue is growing, fraud-check p99 is around 1.9 s
+
+14:31 Maria Lopez: confirmed, model v3 is slow in production
+
+14:47 Priya Nair: ledger-service also slowed down, its write latency doubled
+
+16:31 Maria Lopez: v3 rolled back, latency recovering

@@ -1,0 +1,5 @@
+Memo from the Risk team: fraud-scoring model v3
+
+Fraud-scoring model v3 was enabled in production on March 12, 2026.
+
+In staging, model v3 had a p99 latency of 250 milliseconds and caught 14 percent more fraud than v2.

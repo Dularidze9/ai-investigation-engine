@@ -18,6 +18,15 @@ class Embedder:
         self.tokens += tokens
         return vecs[0]
 
+    def embed_many(self, texts: list[str], batch: int = 100):
+        """For ingestion: embed many chunks, in batches."""
+        out = []
+        for i in range(0, len(texts), batch):
+            vecs, tokens = embed_batch(self.client, texts[i:i + batch])
+            self.tokens += tokens
+            out.extend(vecs)
+        return out
+
     @property
     def cost_usd(self) -> float:
         return self.tokens * PRICE_PER_TOKEN

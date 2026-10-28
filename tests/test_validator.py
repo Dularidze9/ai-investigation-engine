@@ -40,6 +40,13 @@ def test_supported_conflict_is_kept():
     assert out.status == "conflicting" and out.conflicts[0].citations == [1, 3]
 
 
+def test_conflicting_with_empty_answer_gets_the_conflict_text():
+    a = Answer(status="conflicting", answer="", claims=[],
+               conflicts=[Conflict(description="2h40m vs 3h10m.", citations=[1, 2])], missing=[])
+    out, _ = validate(a, RETRIEVED)
+    assert out.answer == "Sources disagree: 2h40m vs 3h10m."
+
+
 def test_abstention_never_carries_claims():
     out, _ = validate(ans(status="insufficient_evidence", claims=[Claim(text="a", citations=[1])]), RETRIEVED)
     assert out.status == "insufficient_evidence" and out.claims == []

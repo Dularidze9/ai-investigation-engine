@@ -1,0 +1,8 @@
+<html><head><title>Incident INC-2231: Payment processing delays on March 10, 2026</title></head><body>
+<h1>Incident INC-2231</h1>
+<p>Start: March 10, 2026 at 14:05 UTC. End: 16:45 UTC. Total duration: 2 hours 40 minutes. Severity: SEV-1.</p>
+<p>Affected services: payment-gateway, fraud-check and checkout-api. Card payments queued and were completed late; no payment was lost.</p>
+<p>Impact: 12,400 payments were delayed by more than 5 minutes.</p>
+<p>Root cause: fraud-scoring model v3 (change CHG-1052) added about 1.8 seconds of latency to every fraud check. Because the payment-gateway connection pool had been reduced to 50 connections the day before (change CHG-1047), requests queued in the gateway and timed out.</p>
+<p>Mitigation: CHG-1052 was rolled back at 16:30 UTC and the connection pool was restored to 200 at 16:40 UTC.</p>
+</body></html>

@@ -1,0 +1,36 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 777 >>
+stream
+BT /F1 10 Tf 40 760 Td 14 TL (Postmortem: March 10 payment delays \(INC-2231\)) Tj T* (Author: Payments Core team. Published March 17, 2026.) Tj T* (Summary: card payments were delayed for 3 hours and 10 minutes on March 10, 2026.) Tj T* (In total 18,000 payments were delayed.) Tj T* (Root causes: change CHG-1052 enabled fraud-scoring model v3, whose latency was far higher in) Tj T* (production than in staging, and change CHG-1047 had reduced the payment-gateway connection pool to 50.) Tj T* (Affected services: payment-gateway, fraud-check, checkout-api. The ledger-service was not affected.) Tj T* (Action items: load-test fraud models before release; alert when the gateway pool is above 80 percent;) Tj T* (require Payments Core review for pool size changes.) Tj T* ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Title (Postmortem: March 10 payment delays) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001069 00000 n 
+0000001139 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1205
+%%EOF

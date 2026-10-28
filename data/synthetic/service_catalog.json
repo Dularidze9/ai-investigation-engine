@@ -1,0 +1,5 @@
+{
+ "title": "Acme Payments service catalog",
+ "text": "checkout-api: owned by the Growth team. Depends on payment-gateway.\n\npayment-gateway: owned by the Payments Core team. Depends on fraud-check and card-network-connector.\n\nfraud-check: owned by the Risk team. Runs the fraud-scoring model.\n\ncard-network-connector: owned by the Payments Core team. Connects to the card network vendor.\n\nledger-service: owned by the Ledger team. Records completed payments asynchronously.\n\nnotification-service: owned by the Messaging team. Sends payment emails from a message queue.",
+ "version": "2026-03-01"
+}

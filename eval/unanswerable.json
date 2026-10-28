@@ -1,0 +1,166 @@
+{
+ "questions": [
+  {
+   "id": "5a7a567255429941d65f25bd",
+   "question": "What was Iqbal F. Qadir on when he participated in an attack on a radar station located on western shore of the Okhamandal Peninsula?",
+   "answer": "flotilla",
+   "type": "bridge",
+   "removed_titles": [
+    "Dwarka",
+    "Iqbal F. Qadir"
+   ]
+  },
+  {
+   "id": "5abca1a55542993a06baf937",
+   "question": "When did the park at which Tivolis Koncertsal is located open?",
+   "answer": "15 August 1843",
+   "type": "bridge",
+   "removed_titles": [
+    "Tivoli Gardens",
+    "Tivolis Koncertsal"
+   ]
+  },
+  {
+   "id": "5a73977d554299623ed4ac08",
+   "question": "What is the shared country of ancestry between Art Laboe and Scout Tufankjian?",
+   "answer": "Armenian",
+   "type": "comparison",
+   "removed_titles": [
+    "Art Laboe",
+    "Scout Tufankjian"
+   ]
+  },
+  {
+   "id": "5ab514c05542991779162d72",
+   "question": "The school in which the Wilmslow Show is held is designated as what?",
+   "answer": "Centre of Excellence",
+   "type": "bridge",
+   "removed_titles": [
+    "Wilmslow High School",
+    "Wilmslow Show"
+   ]
+  },
+  {
+   "id": "5add2b435542990d50227e11",
+   "question": "Who will Billy Howle be seen opposite in the upcoming British drama film directed by Dominic Cooke?",
+   "answer": "Saoirse Ronan",
+   "type": "bridge",
+   "removed_titles": [
+    "Billy Howle",
+    "On Chesil Beach (film)"
+   ]
+  },
+  {
+   "id": "5a88d6df554299206df2b377",
+   "question": "What animated movie, starring Danny Devito, featured music written and produced by Kool Kojak?",
+   "answer": "The Lorax",
+   "type": "bridge",
+   "removed_titles": [
+    "Kool Kojak",
+    "The Lorax (film)"
+   ]
+  },
+  {
+   "id": "5ae6b6065542991bbc976168",
+   "question": "Out of the actors who have played the role of Luc Deveraux in the Universal Soldier franchise, which actor has also starred in the movies Holby City, Doctor Strange, the Bourne Ultimatum and Zero Dark Thirty?",
+   "answer": "Scott Adkins",
+   "type": "bridge",
+   "removed_titles": [
+    "Scott Adkins",
+    "Universal Soldier (franchise)"
+   ]
+  },
+  {
+   "id": "5ae531ee5542990ba0bbb1ff",
+   "question": "Tommy's Honour was a drama film that included the actor who found success with what 2016 BBC miniseries?",
+   "answer": "War & Peace",
+   "type": "bridge",
+   "removed_titles": [
+    "Jack Lowden",
+    "Tommy's Honour"
+   ]
+  }
+ ],
+ "deleted": [
+  {
+   "title": "Dwarka",
+   "document_id": 15000,
+   "chunks": 1
+  },
+  {
+   "title": "Iqbal F. Qadir",
+   "document_id": 15004,
+   "chunks": 1
+  },
+  {
+   "title": "Tivoli Gardens",
+   "document_id": 19825,
+   "chunks": 1
+  },
+  {
+   "title": "Tivolis Koncertsal",
+   "document_id": 19599,
+   "chunks": 1
+  },
+  {
+   "title": "Art Laboe",
+   "document_id": 4720,
+   "chunks": 1
+  },
+  {
+   "title": "Scout Tufankjian",
+   "document_id": 4728,
+   "chunks": 1
+  },
+  {
+   "title": "Wilmslow High School",
+   "document_id": 30816,
+   "chunks": 1
+  },
+  {
+   "title": "Wilmslow Show",
+   "document_id": 30818,
+   "chunks": 1
+  },
+  {
+   "title": "Billy Howle",
+   "document_id": 10929,
+   "chunks": 1
+  },
+  {
+   "title": "On Chesil Beach (film)",
+   "document_id": 10924,
+   "chunks": 1
+  },
+  {
+   "title": "Kool Kojak",
+   "document_id": 33788,
+   "chunks": 1
+  },
+  {
+   "title": "The Lorax (film)",
+   "document_id": 33789,
+   "chunks": 1
+  },
+  {
+   "title": "Scott Adkins",
+   "document_id": 9567,
+   "chunks": 1
+  },
+  {
+   "title": "Universal Soldier (franchise)",
+   "document_id": 9560,
+   "chunks": 1
+  },
+  {
+   "title": "Jack Lowden",
+   "document_id": 16179,
+   "chunks": 1
+  },
+  {
+   "title": "Tommy's Honour",
+   "document_id": 16174,
+   "chunks": 1
+  }
+ ]
+}

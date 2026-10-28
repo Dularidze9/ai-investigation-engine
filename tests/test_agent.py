@@ -163,3 +163,10 @@ def test_evidence_block_neutralizes_injection():
     block = evidence_block(5, 'Bad "doc"', evil)
     assert block.count("</evidence>") == 1 and block.count("<evidence") == 1
     assert 'title="Bad \'doc\'"' in block
+
+
+def test_baseline_mode_is_one_search_and_one_llm_call():
+    llm = FakeLLM([answer(claims=[{"text": "a", "citations": [1]}])])
+    ret = FakeRetriever()
+    r = Agent(llm, ret, agentic=False, first_k=10).run(Q)
+    assert r.status == "answered" and r.llm_calls == 1 and ret.queries == [Q] and r.sub_queries == []

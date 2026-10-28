@@ -41,6 +41,8 @@ def validate(answer: Answer, retrieved: set[int]) -> tuple[Answer, list[str]]:
     elif status == "conflicting" and not conflicts:
         status = "answered" if claims else "insufficient_evidence"
         issues.append("conflict not supported by two sources: status changed")
+    if status == "conflicting" and not text.strip():  # the model often leaves "answer" empty here
+        text = "Sources disagree: " + " ".join(c.description for c in conflicts)
     elif status == "answered" and len(claims) < len(answer.claims):
         status = "partial"
         issues.append("some claims were unsupported: status changed to partial")

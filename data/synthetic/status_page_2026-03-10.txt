@@ -1,0 +1,7 @@
+Acme Payments status page, March 10, 2026
+
+14:10 UTC Investigating: some card payments are processing slowly in the EU region.
+
+15:20 UTC Identified: the cause is a recent change in our fraud checks. A fix is being prepared.
+
+16:50 UTC Resolved: payment processing is back to normal. Delayed payments have been completed.

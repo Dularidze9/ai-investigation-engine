@@ -68,6 +68,14 @@ def _decode(data: bytes) -> str:
         return data.decode("latin-1")
 
 
+def _title_from_first_line(text: str, fallback: str) -> tuple[str, str]:
+    """Plain text: a short first line followed by more text is the title (and is removed from the body)."""
+    first, _, rest = text.partition("\n")
+    if first.strip() and len(first) <= 100 and rest.strip():
+        return first.strip(), rest.strip()
+    return fallback, text
+
+
 def _title_from_markdown(text: str, fallback: str) -> str:
     m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     return m.group(1).strip() if m else fallback
@@ -84,9 +92,11 @@ def parse_file(filename: str, data: bytes) -> ParsedDoc:
     fallback_title = p.stem
 
     try:
-        if ext in ("txt", "md"):
+        if ext == "md":
             text = _clean(_decode(data))
-            title = _title_from_markdown(text, fallback_title) if ext == "md" else fallback_title
+            return ParsedDoc(_title_from_markdown(text, fallback_title), text, ext, {"filename": filename})
+        if ext == "txt":
+            title, text = _title_from_first_line(_clean(_decode(data)), fallback_title)
             return ParsedDoc(title, text, ext, {"filename": filename})
         if ext == "html":
             ex = _TextExtractor()
