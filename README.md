@@ -118,20 +118,6 @@ python scripts/check_stats.py; python scripts/db_size.py      # stats == recount
 Run the app: `uvicorn app.main:app --port 8000` and open http://127.0.0.1:8000.
 Reproduce the evaluation: see [EVALUATION_REPORT.md, section 8](EVALUATION_REPORT.md#8-reproduce).
 
-## Cost log (OpenAI, budget $4.75)
-| Date | Item | Cost (USD) |
-|---|---|---|
-| 2026-10-27 | M0 model check (verify_models.py, 4 tiny calls) | ~0.0002 |
-| 2026-10-28 | M3 embedding of 66,902 chunks (8,550,752 tokens, text-embedding-3-small, 512-d) | 0.1710 |
-| 2026-10-28 | M5 query embeddings (300 questions, 6,207 tokens) | 0.0001 |
-| 2026-10-28 | M5 chunking-B embeddings (16,219 chunks, 1,378,431 tokens) | 0.0276 |
-| 2026-10-28 | M6 agent smoke test (4 questions, gpt-6-luna) | 0.0030 |
-| 2026-10-28 | M7 synthetic docs ingest (2,456 tokens) | 0.00004 |
-| 2026-10-28 | M7 answer evaluation (60 questions x agent + baseline) | 0.0631 |
-| 2026-10-28 | M8 local API smoke test (1 question + cached repeat, 3 tiny uploads) | 0.0008 |
-| 2026-10-28 | M8 public smoke test on Render (1 question + cached repeat) | 0.0002 |
-| | **Total so far** | **~0.266 of 4.75** |
-
 Public demo usage after launch is tracked live by the spending cap (`/api/status`, capped at $1.00).
 
 ## Known limitations
